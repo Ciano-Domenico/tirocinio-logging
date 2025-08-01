@@ -69,7 +69,7 @@ Write-Host ""
 while ($true) {
     Write-Host "🔄 Nuovo ciclo di richieste - $(Get-Date)" -ForegroundColor Cyan
     Generate-Requests
-    Write-Host "⏸️  Pausa 10 secondi prima del prossimo ciclo..." -ForegroundColor Magenta
+    Write-Host "⏸️ Pausa 10 secondi prima del prossimo ciclo..." -ForegroundColor Magenta
     Write-Host ""
     Start-Sleep -Seconds 10
 }
