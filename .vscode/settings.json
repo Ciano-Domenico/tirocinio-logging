@@ -25,7 +25,7 @@
         "editor.defaultFormatter": "ms-vscode.powershell"
     },
     "[dockerfile]": {
-        "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+        "editor.defaultFormatter": "ms-azuretools.vscode-containers"
     },
     "yaml.completion": true,
     "yaml.hover": true,
