@@ -1,9 +1,9 @@
 # monitor.ps1 - Script PowerShell per monitoraggio
-Write-Host "📊 Monitor dei Log - ELK vs Loki" -ForegroundColor Green
-Write-Host "================================="
+Write-Host "Monitor dei Log - ELK vs Loki" -ForegroundColor Green
+Write-Host "==============================="
 
 function Check-ELK {
-    Write-Host "🔍 ELK Stack Status:" -ForegroundColor Cyan
+    Write-Host "ELK Stack Status:" -ForegroundColor Cyan
 
     try {
         $health = Invoke-RestMethod -Uri "http://localhost:9200/_cluster/health" -TimeoutSec 5
@@ -26,14 +26,14 @@ function Check-ELK {
         Write-Host "  Log count: $($logCount.count)" -ForegroundColor White
     }
     catch {
-        Write-Host "  Log count: 0 (o servizio non disponibile)" -ForegroundColor Yellow
+        Write-Host "  Log count: 0 (servizio non disponibile)" -ForegroundColor Yellow
     }
 
     Write-Host ""
 }
 
 function Check-Loki {
-    Write-Host "🔍 Loki Stack Status:" -ForegroundColor Cyan
+    Write-Host "Loki Stack Status:" -ForegroundColor Cyan
 
     try {
         $lokiResponse = Invoke-WebRequest -Uri "http://localhost:3100/ready" -TimeoutSec 5
@@ -55,19 +55,25 @@ function Check-Loki {
 }
 
 function Check-Nginx {
-    Write-Host "🔍 Nginx Proxy Status:" -ForegroundColor Cyan
+    Write-Host "Nginx Proxy Status:" -ForegroundColor Cyan
 
     $accessLogPath = "nginx-proxy\logs\access.log"
     $errorLogPath = "nginx-proxy\logs\error.log"
 
     if (Test-Path $accessLogPath) {
-        $accessLogs = (Get-Content $accessLogPath).Count
+        $accessLogs = (Get-Content $accessLogPath -ErrorAction SilentlyContinue).Count
+        if ($accessLogs -eq $null) { $accessLogs = 0 }
         Write-Host "  Access logs: $accessLogs lines" -ForegroundColor White
 
         if ($accessLogs -gt 0) {
-            $lastLog = Get-Content $accessLogPath -Tail 1 | ConvertFrom-Json -ErrorAction SilentlyContinue
-            if ($lastLog) {
-                Write-Host "  Last request: $($lastLog.timestamp)" -ForegroundColor White
+            try {
+                $lastLog = Get-Content $accessLogPath -Tail 1 | ConvertFrom-Json -ErrorAction SilentlyContinue
+                if ($lastLog -and $lastLog.timestamp) {
+                    Write-Host "  Last request: $($lastLog.timestamp)" -ForegroundColor White
+                }
+            }
+            catch {
+                Write-Host "  Last request: Unable to parse" -ForegroundColor Yellow
             }
         }
     }
@@ -76,7 +82,8 @@ function Check-Nginx {
     }
 
     if (Test-Path $errorLogPath) {
-        $errorLogs = (Get-Content $errorLogPath).Count
+        $errorLogs = (Get-Content $errorLogPath -ErrorAction SilentlyContinue).Count
+        if ($errorLogs -eq $null) { $errorLogs = 0 }
         Write-Host "  Error logs: $errorLogs lines" -ForegroundColor White
     }
     else {
@@ -89,7 +96,7 @@ function Check-Nginx {
 # Loop di monitoraggio
 while ($true) {
     Clear-Host
-    Write-Host "📊 Monitor dei Log - ELK vs Loki - $(Get-Date)" -ForegroundColor Green
+    Write-Host "Monitor dei Log - ELK vs Loki - $(Get-Date)" -ForegroundColor Green
     Write-Host "=========================================="
     Write-Host ""
 
@@ -97,9 +104,9 @@ while ($true) {
     Check-ELK
     Check-Loki
 
-    Write-Host "💡 Comandi utili:" -ForegroundColor Magenta
+    Write-Host "Comandi utili:" -ForegroundColor Magenta
     Write-Host "  - Ctrl+C per uscire" -ForegroundColor White
-    Write-Host "  - .\generate-traffic.ps1 per generare traffico" -ForegroundColor White
+    Write-Host "  - generate-traffic-simple.ps1 per generare traffico" -ForegroundColor White
     Write-Host "  - docker-compose logs [service] per vedere i log" -ForegroundColor White
     Write-Host ""
 
