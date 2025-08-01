@@ -3,9 +3,38 @@
     "files.eol": "\n",
     "files.trimTrailingWhitespace": true,
     "files.insertFinalNewline": true,
-    "yaml.schemas": {
-        "https://json.schemastore.org/docker-compose.json": "docker-compose.yml"
-    },
     "powershell.scriptAnalysis.enable": true,
-    "editor.formatOnSave": true
+    "editor.formatOnSave": true,
+    "docker.defaultRegistryPath": "docker.io",
+    "editor.tabSize": 2,
+    "editor.insertSpaces": true,
+    "yaml.format.enable": true,
+    "json.format.enable": true,
+    "yaml.schemas": {
+        "https://raw.githubusercontent.com/compose-spec/compose-spec/master/schema/compose-spec.json": "docker-compose*.yml"
+    },
+    "[yaml]": {
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "editor.autoIndent": "advanced"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[powershell]": {
+        "editor.defaultFormatter": "ms-vscode.powershell"
+    },
+    "[dockerfile]": {
+        "editor.defaultFormatter": "ms-azuretools.vscode-docker"
+    },
+    "yaml.completion": true,
+    "yaml.hover": true,
+    "yaml.validate": true,
+    "docker.compose.autoStart": false,
+    "docker.compose.files": [
+        {
+            "label": "Tirocinio Logging",
+            "path": "docker-compose.yml"
+        }
+    ]
 }

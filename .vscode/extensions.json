@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "ms-vscode.powershell",
+    "ms-azuretools.vscode-docker",
+    "redhat.vscode-yaml",
+    "ms-vscode.vscode-json",
+    "shanoor.vscode-nginx",
+    "ms-vscode.vscode-eslint",
+    "ms-python.python",
+    "grafana.vscode-jsonnet"
+  ]
+}

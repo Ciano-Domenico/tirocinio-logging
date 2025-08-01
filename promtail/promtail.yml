@@ -22,6 +22,7 @@ scrape_configs:
           __path__: /var/log/nginx/access.log
 
     pipeline_stages:
+      # Parse JSON log format
       - json:
           expressions:
             timestamp: timestamp
@@ -30,13 +31,30 @@ scrape_configs:
             status: status
             body_bytes_sent: body_bytes_sent
             request_time: request_time
+            upstream_response_time: upstream_response_time
+            upstream_addr: upstream_addr
             http_user_agent: http_user_agent
+            server_name: server_name
 
+      # Extract HTTP method and path
+      - regex:
+          expression: '^(?P<method>\S+)\s+(?P<path>\S+)\s+HTTP/(?P<http_version>[\d\.]+)$'
+          source: request
+
+      # Determine target service from path
+      - regex:
+          expression: "^/(?P<target_service>app[1-3])"
+          source: path
+
+      # Set timestamp
       - timestamp:
           source: timestamp
           format: "2006-01-02T15:04:05Z07:00"
 
+      # Add labels
       - labels:
+          method: method
+          target_service: target_service
           status_code: status
 
   # Nginx Error Logs
@@ -50,3 +68,18 @@ scrape_configs:
           log_type: error
           environment: development
           __path__: /var/log/nginx/error.log
+
+    pipeline_stages:
+      # Parse standard nginx error format
+      - regex:
+          expression: '^(?P<timestamp>\d{4}/\d{2}/\d{2} \d{2}:\d{2}:\d{2}) \[(?P<log_level>\w+)\] (?P<pid>\d+)#(?P<tid>\d+): (\*(?P<connection_id>\d+) )?(?P<error_message>.*)$'
+
+      # Set timestamp
+      - timestamp:
+          source: timestamp
+          format: "2006/01/02 15:04:05"
+
+      # Add labels
+      - labels:
+          log_level: log_level
+          connection_id: connection_id

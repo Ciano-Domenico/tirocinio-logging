@@ -73,14 +73,14 @@ const server = http.createServer((req, res) => {
         req.on('end', () => {
             try {
                 const logData = JSON.parse(body);
-                console.log(`${new Date().toISOString()} - CUSTOM LOG: `, JSON.stringify(logData));
+                console.log(`${new Date().toISOString()} - CUSTOM LOG:`, JSON.stringify(logData));
                 res.writeHead(200, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     message: 'Log received',
                     timestamp: new Date().toISOString()
                 }));
             } catch (error) {
-                console.error(`${new Date().toISOString()} - ERROR parsing custom log: `, error.message);
+                console.error(`${new Date().toISOString()} - ERROR parsing custom log:`, error.message);
                 res.writeHead(400, { 'Content-Type': 'application/json' });
                 res.end(JSON.stringify({
                     error: 'Invalid JSON',
@@ -104,14 +104,14 @@ const server = http.createServer((req, res) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`${new Date().toISOString()} - Node.js server started on port ${PORT} `);
-    console.log(`${new Date().toISOString()} - Available endpoints: `);
-    console.log(`  - GET /        : Service info`);
-    console.log(`  - GET / health  : Health check`);
-    console.log(`  - GET / slow    : Slow response(2s)`);
-    console.log(`  - GET / error   : Simulated error`);
-    console.log(`  - GET / memory  : Memory usage`);
-    console.log(`  - POST / log     : Custom log endpoint`);
+    console.log(`${new Date().toISOString()} - Node.js server started on port ${PORT}`);
+    console.log(`${new Date().toISOString()} - Available endpoints:`);
+    console.log(`  - GET  /        : Service info`);
+    console.log(`  - GET  /health  : Health check`);
+    console.log(`  - GET  /slow    : Slow response (2s)`);
+    console.log(`  - GET  /error   : Simulated error`);
+    console.log(`  - GET  /memory  : Memory usage`);
+    console.log(`  - POST /log     : Custom log endpoint`);
 });
 
 // Gestione graceful shutdown

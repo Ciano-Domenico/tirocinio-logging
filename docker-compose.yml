@@ -68,7 +68,7 @@ services:
     networks:
       - logging
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1" ]
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -189,7 +189,6 @@ volumes:
   loki_data:
   grafana_data:
   prometheus_data:
-
 
 networks:
   internal:
