@@ -1,4 +1,3 @@
-
 services:
   # ===== APPLICAZIONI DI ESEMPIO =====
   app1:
@@ -51,59 +50,127 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # ===== ELK STACK =====
+  # ===== ELK STACK OTTIMIZZATO =====
   elasticsearch:
     image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
     container_name: elasticsearch
     environment:
+      # Configurazione base
       - discovery.type=single-node
-      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - cluster.name=elk-cluster
+      - node.name=elk-node-1
+
+      # Sicurezza disabilitata per sviluppo
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
+      - xpack.security.http.ssl.enabled=false
+      - xpack.security.transport.ssl.enabled=false
+
+      # Ottimizzazioni memoria (RIDOTTE per sviluppo)
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - bootstrap.memory_lock=true
+
+      # Ottimizzazioni performance
+      - indices.fielddata.cache.size=40%
+      - indices.memory.index_buffer_size=10%
+
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
     ports:
       - "9200:9200"
+      - "9300:9300"
+
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
+     # - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
+
     networks:
       - logging
+
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=30s || exit 1"]
       interval: 30s
-      timeout: 10s
-      retries: 5
+      timeout: 30s
+      retries: 15
+      start_period: 120s
 
   logstash:
     image: docker.elastic.co/logstash/logstash:8.11.0
     container_name: logstash
     volumes:
-      - ./logstash/pipeline:/usr/share/logstash/pipeline
-      - ./logstash/config:/usr/share/logstash/config
+      - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
+     # - ./logstash/config:/usr/share/logstash/config:ro
       - ./nginx-proxy/logs:/var/log/nginx:ro
     ports:
-      - "5000:5000"
-      - "5044:5044"
+      - "5000:5000"  # HTTP input
+      - "5044:5044"  # Beats input
+      - "9600:9600"  # API endpoint
     depends_on:
       elasticsearch:
         condition: service_healthy
     networks:
       - logging
     environment:
-      - LS_JAVA_OPTS=-Xmx512m -Xms512m
+      # Ottimizzazioni memoria
+      - "LS_JAVA_OPTS=-Xmx256m -Xms256m"
+      - "LS_HEAP_SIZE=256m"
+
+      # Configurazione pipeline
+      - PIPELINE_WORKERS=2
+      - PIPELINE_BATCH_SIZE=125
+      - PIPELINE_BATCH_DELAY=50
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:9600/_node/stats || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
+
+    restart: unless-stopped
 
   kibana:
     image: docker.elastic.co/kibana/kibana:8.11.0
     container_name: kibana
     environment:
+      # Connessione Elasticsearch
       - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
       - ELASTICSEARCH_USERNAME=
       - ELASTICSEARCH_PASSWORD=
+
+      # Configurazioni base
+      - SERVER_NAME=kibana
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=5601
+
+      # Ottimizzazioni
+      - LOGGING_QUIET=true
+      - NODE_OPTIONS="--max-old-space-size=512"
+
     ports:
       - "5601:5601"
+
     depends_on:
       elasticsearch:
         condition: service_healthy
+
     networks:
       - logging
+
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5601/api/status || exit 1"]
+      interval: 30s
+      timeout: 30s
+      retries: 10
+      start_period: 180s
+
+    restart: unless-stopped
 
   # ===== LOKI + GRAFANA STACK =====
   loki:
@@ -117,6 +184,11 @@ services:
     command: -config.file=/etc/loki/loki.yml
     networks:
       - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3100/ready || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   promtail:
     image: grafana/promtail:2.9.0
@@ -128,7 +200,8 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     command: -config.file=/etc/promtail/promtail.yml
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
     networks:
       - logging
 
@@ -139,13 +212,20 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
     volumes:
       - grafana_data:/var/lib/grafana
       - ./grafana/provisioning:/etc/grafana/provisioning
     depends_on:
-      - loki
+      loki:
+        condition: service_healthy
     networks:
       - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   # ===== MONITORING AGGIUNTIVO =====
   prometheus:
@@ -161,10 +241,17 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=7d'
     networks:
       - logging
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # ===== GENERATORE DI TRAFFICO =====
+  # ===== GENERATORE DI TRAFFICO CONTROLLATO =====
   traffic-generator:
     image: alpine/curl
     container_name: traffic-generator
@@ -174,23 +261,43 @@ services:
       - internal
     command: >
       sh -c "
+        echo 'Generatore di traffico avviato...';
         while true; do
-          curl -s http://nginx-proxy/app1/ || true;
-          curl -s http://nginx-proxy/app2/ || true;
-          curl -s http://nginx-proxy/app3/ || true;
-          curl -s http://nginx-proxy/nonexistent || true;
+          # Traffico normale
+          curl -s http://nginx-proxy/app1/ > /dev/null || true;
+          sleep 2;
+          curl -s http://nginx-proxy/app2/ > /dev/null || true;
+          sleep 2;
+          curl -s http://nginx-proxy/app3/ > /dev/null || true;
+          sleep 3;
+
+          # Alcuni errori per testare il logging
+          curl -s http://nginx-proxy/nonexistent > /dev/null || true;
+          sleep 1;
+          curl -s http://nginx-proxy/app3/error > /dev/null || true;
           sleep 5;
         done
       "
+    restart: unless-stopped
 
 volumes:
   elasticsearch_data:
+    driver: local
   loki_data:
+    driver: local
   grafana_data:
+    driver: local
   prometheus_data:
+    driver: local
 
 networks:
   internal:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
   logging:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16
