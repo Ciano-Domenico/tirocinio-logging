@@ -1,4 +1,4 @@
-# benchmark-working.ps1 - Benchmark funzionante
+# benchmark-comparison.ps1
 Write-Host "Benchmark ELK vs Loki" -ForegroundColor Green
 Write-Host "====================="
 Write-Host ""
@@ -31,13 +31,12 @@ else {
 
 Write-Host ""
 
-# Test Loki (semplificato)
+# Test Loki
 Write-Host "Test Loki..." -ForegroundColor Yellow
 $lokiQueryTimes = @()
 for ($i = 1; $i -le 3; $i++) {
   try {
     $start = Get-Date
-    # URL semplificato senza parametri complessi
     $response = Invoke-RestMethod "http://localhost:3100/loki/api/v1/query?query={job=`"nginx-proxy`"}"
     $end = Get-Date
     $time = ($end - $start).TotalMilliseconds
@@ -105,7 +104,7 @@ if (Test-Path "nginx-proxy\logs\access.log") {
 
 Write-Host ""
 
-# Risorse memoria (semplificato)
+# Risorse memoria
 Write-Host "Uso memoria..." -ForegroundColor Yellow
 
 $elkMemory = 0

@@ -88,7 +88,6 @@ services:
 
     volumes:
       - elasticsearch_data:/usr/share/elasticsearch/data
-     # - ./elasticsearch/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml:ro
 
     networks:
       - logging
@@ -105,7 +104,6 @@ services:
     container_name: logstash
     volumes:
       - ./logstash/pipeline:/usr/share/logstash/pipeline:ro
-     # - ./logstash/config:/usr/share/logstash/config:ro
       - ./nginx-proxy/logs:/var/log/nginx:ro
     ports:
       - "5000:5000"  # HTTP input

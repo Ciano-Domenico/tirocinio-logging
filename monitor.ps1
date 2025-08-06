@@ -106,7 +106,7 @@ while ($true) {
 
     Write-Host "Comandi utili:" -ForegroundColor Magenta
     Write-Host "  - Ctrl+C per uscire" -ForegroundColor White
-    Write-Host "  - generate-traffic-simple.ps1 per generare traffico" -ForegroundColor White
+    Write-Host "  - generate-traffic.ps1 per generare traffico" -ForegroundColor White
     Write-Host "  - docker-compose logs [service] per vedere i log" -ForegroundColor White
     Write-Host ""
 
